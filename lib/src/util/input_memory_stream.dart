@@ -7,6 +7,7 @@ import 'input_stream.dart';
 /// Stream in data from a memory buffer.
 class InputMemoryStream extends InputStream {
   late Uint8List buffer;
+
   // The read offset into the buffer.
   int _position;
   late int _length;
@@ -44,7 +45,7 @@ class InputMemoryStream extends InputStream {
       : buffer = other.buffer,
         _position = other._position,
         _length = other._length,
-        super(byteOrder: other.byteOrder);
+        super.from(other);
 
   ///  The current read position relative to the start of the buffer.
   @override
@@ -112,7 +113,7 @@ class InputMemoryStream extends InputStream {
     position ??= _position;
     length ??= _length - position;
     return InputMemoryStream(buffer,
-        byteOrder: byteOrder, offset: position, length: length);
+        byteOrder: byteShift.byteOrder, offset: position, length: length);
   }
 
   /// Read a single byte.
@@ -120,6 +121,34 @@ class InputMemoryStream extends InputStream {
   int readByte() {
     final b = buffer[_position++];
     return b;
+  }
+
+  @override
+  int readUint16() {
+    final uint = byteShift.uint16(buffer, _position);
+    _position += 2;
+    return uint;
+  }
+
+  @override
+  int readUint24() {
+    final uint = byteShift.uint24(buffer, _position);
+    _position += 3;
+    return uint;
+  }
+
+  @override
+  int readUint32() {
+    final uint = byteShift.uint32(buffer, _position);
+    _position += 4;
+    return uint;
+  }
+
+  @override
+  int readUint64() {
+    final uint = byteShift.uint64(buffer, _position);
+    _position += 8;
+    return uint;
   }
 
   @override

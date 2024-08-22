@@ -2,11 +2,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:archive/src/util/byte_shift.dart';
+
 import 'byte_order.dart';
 
 abstract class InputStream {
   /// The current endian order if the stream.
-  ByteOrder byteOrder;
+  final ByteShift byteShift;
 
   /// The current read position relative to the start of the buffer.
   int get position;
@@ -20,7 +22,10 @@ abstract class InputStream {
   /// Is the current position at the end of the stream?
   bool get isEOS;
 
-  InputStream({required this.byteOrder});
+  InputStream({required ByteOrder byteOrder}) : byteShift = byteOrder.shift;
+
+  InputStream.from(InputStream other)
+      : byteShift = other.byteShift;
 
   bool open();
 
@@ -64,67 +69,16 @@ abstract class InputStream {
   int readUint8() => readByte();
 
   /// Read a 16-bit word from the stream.
-  int readUint16() {
-    final b1 = readByte();
-    final b2 = readByte();
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 8) | b2;
-    }
-    return (b2 << 8) | b1;
-  }
+  int readUint16();
 
   /// Read a 24-bit word from the stream.
-  int readUint24() {
-    final b1 = readByte();
-    final b2 = readByte();
-    final b3 = readByte();
-    if (byteOrder == ByteOrder.bigEndian) {
-      return b3 | (b2 << 8) | (b1 << 16);
-    }
-    return b1 | (b2 << 8) | (b3 << 16);
-  }
+  int readUint24();
 
   /// Read a 32-bit word from the stream.
-  int readUint32() {
-    final b1 = readByte();
-    final b2 = readByte();
-    final b3 = readByte();
-    final b4 = readByte();
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
-    }
-    return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
-  }
+  int readUint32();
 
   /// Read a 64-bit word form the stream.
-  int readUint64() {
-    final b1 = readByte();
-    final b2 = readByte();
-    final b3 = readByte();
-    final b4 = readByte();
-    final b5 = readByte();
-    final b6 = readByte();
-    final b7 = readByte();
-    final b8 = readByte();
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 56) |
-          (b2 << 48) |
-          (b3 << 40) |
-          (b4 << 32) |
-          (b5 << 24) |
-          (b6 << 16) |
-          (b7 << 8) |
-          b8;
-    }
-    return (b8 << 56) |
-        (b7 << 48) |
-        (b6 << 40) |
-        (b5 << 32) |
-        (b4 << 24) |
-        (b3 << 16) |
-        (b2 << 8) |
-        b1;
-  }
+  int readUint64();
 
   /// Read [count] bytes from the stream.
   InputStream readBytes(int count) {

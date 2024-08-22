@@ -3,13 +3,14 @@ import 'dart:typed_data';
 
 import 'abstract_file_handle.dart';
 import 'byte_order.dart';
+import 'byte_shift.dart';
 
 /// Buffered file reader reduces file system disk access by reading in
 /// buffers of the file so that individual file reads
 /// can be read from the cached buffer.
 class FileBuffer {
-  final ByteOrder byteOrder;
   final AbstractFileHandle file;
+  final ByteShift byteShift;
   late Uint8List _buffer;
   int _fileSize = 0;
   int _position = 0;
@@ -27,9 +28,9 @@ class FileBuffer {
   /// The larger the buffer, the less it will have to access the file system.
   FileBuffer(
     this.file, {
-    this.byteOrder = ByteOrder.littleEndian,
+    ByteOrder byteOrder = ByteOrder.littleEndian,
     int bufferSize = kDefaultBufferSize,
-  }) {
+  }) : byteShift = byteOrder.shift {
     if (!file.isOpen) {
       file.open();
     }
@@ -45,7 +46,7 @@ class FileBuffer {
   }
 
   FileBuffer.from(FileBuffer other, {int? bufferSize})
-      : this.byteOrder = other.byteOrder,
+      : this.byteShift = other.byteShift,
         this.file = other.file {
     this._bufferSize = bufferSize ?? other._bufferSize;
     this._position = other._position;
@@ -104,12 +105,7 @@ class FileBuffer {
       _readBuffer(position, fileSize ?? _fileSize);
     }
     var p = position - _position;
-    final b1 = _buffer[p++];
-    final b2 = _buffer[p++];
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 8) | b2;
-    }
-    return (b2 << 8) | b1;
+    return byteShift.uint16(_buffer, p);
   }
 
   /// Read a 24-bit unsigned int at the given [position] within the file.
@@ -121,13 +117,7 @@ class FileBuffer {
       _readBuffer(position, fileSize ?? _fileSize);
     }
     var p = position - _position;
-    final b1 = _buffer[p++];
-    final b2 = _buffer[p++];
-    final b3 = _buffer[p++];
-    if (byteOrder == ByteOrder.bigEndian) {
-      return b3 | (b2 << 8) | (b1 << 16);
-    }
-    return b1 | (b2 << 8) | (b3 << 16);
+    return byteShift.uint24(_buffer, p);
   }
 
   /// Read a 32-bit unsigned int at the given [position] within the file.
@@ -139,14 +129,7 @@ class FileBuffer {
       _readBuffer(position, fileSize ?? _fileSize);
     }
     var p = position - _position;
-    final b1 = _buffer[p++];
-    final b2 = _buffer[p++];
-    final b3 = _buffer[p++];
-    final b4 = _buffer[p++];
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
-    }
-    return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
+    return byteShift.uint32(_buffer, p);
   }
 
   /// Read a 64-bit unsigned int at the given [position] within the file.
@@ -158,33 +141,7 @@ class FileBuffer {
       _readBuffer(position, fileSize ?? _fileSize);
     }
     var p = position - _position;
-    final b1 = _buffer[p++];
-    final b2 = _buffer[p++];
-    final b3 = _buffer[p++];
-    final b4 = _buffer[p++];
-    final b5 = _buffer[p++];
-    final b6 = _buffer[p++];
-    final b7 = _buffer[p++];
-    final b8 = _buffer[p++];
-
-    if (byteOrder == ByteOrder.bigEndian) {
-      return (b1 << 56) |
-          (b2 << 48) |
-          (b3 << 40) |
-          (b4 << 32) |
-          (b5 << 24) |
-          (b6 << 16) |
-          (b7 << 8) |
-          b8;
-    }
-    return (b8 << 56) |
-        (b7 << 48) |
-        (b6 << 40) |
-        (b5 << 32) |
-        (b4 << 24) |
-        (b3 << 16) |
-        (b2 << 8) |
-        b1;
+    return byteShift.uint64(_buffer, p);
   }
 
   /// Read [count] bytes starting at the given [position] within the file.

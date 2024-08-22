@@ -75,7 +75,7 @@ class InputFileStream extends InputStream {
         _fileOffset = other._fileOffset + (position ?? 0),
         _fileSize = length ?? other._fileSize,
         _position = 0,
-        super(byteOrder: other.byteOrder);
+        super.from(other);
 
   @override
   bool open() => _file.open();
